@@ -2,10 +2,11 @@ import requests
 import os
 import urllib.request
 from bs4 import BeautifulSoup
+import time
 
-def manage_sources():
-	wallpage1 = "https://bing.gifposter.com/archive.html"
-	wallpage2 = "https://bing.gifposter.com/archive/201912.html"
+def main():
+	sample_wallpage1 = "https://bing.gifposter.com/archive.html"
+	sample_wallpage2 = "https://bing.gifposter.com/archive/201912.html"
 
 	months_2019 = []
 	months_2018 = []
@@ -24,53 +25,52 @@ def manage_sources():
 	urls_2019 = []
 	urls_2018 = []
 	
-	def generate_dirs_and_urls(month_list, url_list):
+	dirs_2019 = []
+	dirs_2018 = []
+	
+	def generate_dirs_and_urls(month_list, url_list, dir_list):
 		for month in month_list:
 			## Make new directories for each month
-			dir_path = os.path.join(os.getcwd(), month)
-			print (dir_path)
-			# ~ os.mkdir(dir_path)
+			dir_path = os.path.join(os.getcwd(), "wallpapers", month)
+			dir_list.append(dir_path)
+			if not os.path.exists(dir_path):
+				os.mkdir(dir_path)
 			
 			## Generate URLs for each archive download source.
 			base = "https://bing.gifposter.com/archive"
 			url_list.append(base + "/" + month + ".html")
 	
-	generate_dirs_and_urls(months_2018, urls_2018)
-	generate_dirs_and_urls(months_2019, urls_2019)
+	generate_dirs_and_urls(months_2018, urls_2018, dirs_2018)
+	generate_dirs_and_urls(months_2019, urls_2019, dirs_2019)
 	
 	## Checking I didn't fuck anything up in the naming of urls
-	print (urls_2018)
-	print (urls_2019)
+	# ~ print (urls_2018)
+	# ~ print (urls_2019)
 	
+	for url,directory in zip(urls_2018, dirs_2018):
+		# ~ print (url)
+		# ~ print (directory)
+		download(url, directory)
 
-def download():
-	wallpaper_page = wallpage2
+def download(source_url, dest_dir):
+	wallpaper_page = source_url
 	result = requests.get(wallpaper_page)
 
 	if result.status_code == 200:
 		soup = BeautifulSoup(result.content, "html.parser")
 
-	# ~ print (soup)
-	# ~ for tag in soup.find_all("a"):
-		# ~ urls.append(tag['src'])
-
 	urls = []
 	for tag in soup.find_all("img"):
 		urls.append(tag['src'])
-		
-	urls.pop()
-	# ~ print (urls)
-
+	urls.pop() # get rid of pesky loose data
+	
 	for count, url in enumerate(urls):
-		urls[count] = url[:-3] # remove _sm from url for full size image
+		urls[count] = url[:-3] # remove _sm from url for fullsize image
 		name = urls[count][36:] # cut filename from domain
 
-		print ("...Downloading " + name + " from " + urls[count])
-		urllib.request.urlretrieve(
-			urls[count], os.path.join(os.getcwd(), name))
-
-def main():
-	manage_sources()
+		print("Downloading " + name + " from " + urls[count])
+		print()
+		urllib.request.urlretrieve(urls[count], os.path.join(dest_dir, name))
 	
 main()
 	
